@@ -6,6 +6,10 @@ library(xgboost)
 library(pROC)
 options(scipen = 999, digits = 3)
 
+######################3 JUST TO SEE A THING
+
+
+
 ##### IMPORTAÇÃO DE DADOS
 
 vars <- fread('data/VariableDefinitions.csv', header = T, encoding = 'UTF-8')

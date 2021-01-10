@@ -8,9 +8,9 @@ options(scipen = 999, digits = 3)
 
 ##### IMPORTAÇÃO DE DADOS
 
-vars <- fread('VariableDefinitions.csv', header = T, encoding = 'UTF-8')
-train <- fread('Train_v2.csv')
-test <- fread('Test_v2.csv')
+vars <- fread('data/VariableDefinitions.csv', header = T, encoding = 'UTF-8')
+train <- fread('data/Train_v2.csv')
+test <- fread('data/Test_v2.csv')
 
 
 ##### EDA

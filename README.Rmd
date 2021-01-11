@@ -7,7 +7,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999, digits = 3)
 ```
 
-## Financial Inclusion in Africa
+## Introduçao
 
 Esse repositório contém códigos do desafio Zindi Africa. Aqui, é descrito todo o processo para chegar no resultado final. Os códigos todo estão no arquivo `CaseAnaliseDados.R`.
 

@@ -98,6 +98,93 @@ cols <- cols[V1==T]
 train[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
 validation[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
 
+####### TRAIN CONTROL
+
+trcontrol = trainControl( method = "cv",
+                          number = 5,  
+                          allowParallel = TRUE,
+                          verboseIter = TRUE )
+
+####### RANDOM FOREST
+
+rf_model <- train(x = train, 
+                  y = y_train,
+                  trControl = trcontrol,
+                  tuneLength = 5,
+                  method = "rf")
+
+prob_rf_test <- predict(rf_model, train, type='prob')
+pred_rf_test <- predict(rf_model, train, type='raw')
+cm_rf_test <- confusionMatrix(data = pred_rf_test, reference = y_train)
+
+prob_rf_validation <- predict(rf_model, validation, type='prob')
+pred_rf_validation <- predict(rf_model, validation, type='raw')
+cm_rf_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
+rf_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+
+plot(rf_roc)
+auc(rf_roc)
+
+train_ds <- downSample(train, y_train, yname = 'bank_account')
+
+setDT(train_ds)[, .N, bank_account]
+
+y_ds <- train_ds$bank_account
+train_ds <- train_ds[, -'bank_account', with=F]
+
+rf_ds_model <- train(x = train_ds, 
+                     y = y_ds,
+                     trControl = trcontrol,
+                     tuneLength = 5,
+                     method = "rf")
+
+prob_rf_ds_train <- predict(rf_ds_model, train_ds, type='prob')
+pred_rf_ds_train <- predict(rf_ds_model, train_ds, type='raw')
+cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train, reference = y_ds)
+
+prob_rf_validation_ds <- predict(rf_ds_model, validation, type='prob')
+pred_rf_validation_ds <- predict(rf_ds_model, validation, type='raw')
+cm_rf_ds_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
+rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+
+plot(rf_ds_roc)
+auc(rf_ds_roc)
+
+train_us <- upSample(train, y_train, yname = 'bank_account')
+
+setDT(train_us)[, .N, bank_account]
+
+y_us <- train_us$bank_account
+train_us <- train_us[, -'bank_account', with=F]
+
+rf_us_model <- train(x = train_us, 
+                     y = y_us,
+                     trControl = trcontrol,
+                     tuneLength = 5,
+                     method = "rf")
+
+prob_rf_ds_train <- predict(rf_us_model, train_us, type='prob')
+pred_rf_ds_train <- predict(rf_us_model, train_us, type='raw')
+cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train, reference = y_us)
+
+prob_rf_validation <- predict(rf_us_model, validation, type='prob')
+pred_rf_validation <- predict(rf_us_model, validation, type='raw')
+cm_rf_us_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
+rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+
+plot(rf_ds_roc)
+auc(rf_ds_roc)
+
+
+
+
+
+
+
+
+
+
+
 dmy_train <- dummyVars('~.', data = train)
 train_matrix <- data.table(predict(dmy_train, newdata = train))
 
@@ -112,10 +199,7 @@ set.seed(100)  # For reproducibility
 train_matrix <- train_matrix %>% as.matrix() %>% xgb.DMatrix()
 validation_matrix <- validation_matrix %>% as.matrix() %>% xgb.DMatrix()
 
-xgb_trcontrol = trainControl( method = "cv",
-                              number = 5,  
-                              allowParallel = TRUE,
-                              verboseIter = TRUE )
+
 
 xgbGrid <- expand.grid(nrounds = c(35,50),  # this is n_estimators in the python code above
                        max_depth = c(10, 25),
@@ -148,12 +232,6 @@ plot(xgb_roc)
 auc(xgb_roc)
 
 
-train_downsample <- downSample(train, y_train, yname = 'bank_account')
-
-setDT(train_downsample)[, .N, bank_account]
-
-y_ds <- train_downsample$bank_account
-train_downsample <- train_downsample[, -'bank_account', with=F]
 
 dmy_train_ds <- dummyVars('~.', data = train_downsample)
 train_matrix_ds <- data.table(predict(dmy_train_ds, newdata = train_downsample))

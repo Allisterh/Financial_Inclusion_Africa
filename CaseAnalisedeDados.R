@@ -4,10 +4,12 @@ library(caret)
 library(broom)
 library(xgboost)
 library(pROC)
+library(magick)
 options(scipen = 999, digits = 3)
 
 ######################3 JUST TO SEE A THING
 
+ag_colors <- c('#3e6dbe', '#78ca35', '#253165')
 
 
 ##### IMPORTAÇÃO DE DADOS
@@ -35,6 +37,46 @@ train[, .N, bank_account][, perc := prop.table(N)][]
 top_uniques <- train[, .N, uniqueid][order(-N)][1:10]
 train[uniqueid %in% top_uniques$uniqueid][order(uniqueid)]
 train[, min(year), country]
+
+######### CONTAGEM POR VARIÁVEL RESPOSTA
+
+logo <- image_read("https://logospng.org/download/agibank/logo-agibank-icon-2048.png")
+
+p1 <- ggplot(train, aes(x = bank_account, fill = bank_account)) +
+  geom_bar() +
+  scale_fill_manual(values = ag_colors) + 
+  labs(title = 'DESBALANÇO ENTRE AS VARIÁVEIS RESPOSTA',
+       subtitle = 'CONTAGEM POR CATEGORIA',
+       fill = 'CONTA NO BANCO') +
+  theme_minimal() +
+  theme(axis.title = element_blank())
+
+p1
+grid::grid.raster(logo, x = .98, y = 0.015, just = c('right', 'bottom'), width = unit(.3, 'inches'))
+
+######### CONTA NO BANCO POR PAÍS
+
+perc_country <- train[, .(n = .N), by = .(country, bank_account)][, perc := round( n / sum(n), 2), country][]
+
+p2 <- ggplot(perc_country, aes(x = country, 
+                               y =  n,
+                               fill = bank_account)) +
+  geom_col(position = "dodge") +
+  geom_text(
+    aes(x = country, y = n, label = paste0(perc *100, '%')),
+    position = position_dodge(width = 1),
+    vjust = -0.5, size = 4
+  ) + 
+  scale_fill_manual(values = ag_colors) + 
+  labs(title = 'Contagem de pessoas que possuem conta no banco por País',
+       fill = 'Conta no banco') +
+  theme_minimal() +
+  theme(axis.title = element_blank(), 
+        plot.title = element_text(size = 16))
+
+p2
+grid::grid.raster(logo, x = .98, y = 0.015, just = c('right', 'bottom'), width = unit(.3, 'inches'))
+
 
 ######### VALIDATION 
 
@@ -95,7 +137,6 @@ xgb_model <- train( x = train_matrix,
 prob_train <- predict(xgb_model, train_matrix, type="prob")
 pred_train <- predict(xgb_model, train_matrix, type="raw")
 
-
 cm <- confusionMatrix(data = pred_train, reference = y_train)
 
 prob_validation <- predict(xgb_model, validation_matrix, type="prob")
@@ -106,6 +147,43 @@ xgb_roc <- pROC::roc(y_validation, prob_validation[,'Yes'])
 
 plot(xgb_roc)
 auc(xgb_roc)
+
+
+train_downsample <- downSample(train, y_train, yname = 'bank_account')
+
+setDT(train_downsample)[, .N, bank_account]
+
+y_ds <- train_downsample$bank_account
+train_downsample <- train_downsample[, -'bank_account', with=F]
+
+dmy_train_ds <- dummyVars('~.', data = train_downsample)
+train_matrix_ds <- data.table(predict(dmy_train_ds, newdata = train_downsample))
+
+train_matrix_ds <- train_matrix_ds %>% as.matrix() %>% xgb.DMatrix()
+
+xgb_model_downsample <- train( x = train_matrix_ds, 
+                               y = y_ds,
+                               trControl = xgb_trcontrol,
+                               tuneGrid = xgbGrid,
+                               method = "xgbTree")
+
+prob_train_ds <- predict(xgb_model_downsample, train_matrix_ds, type="prob")
+pred_train_ds <- predict(xgb_model_downsample, train_matrix_ds, type="raw")
+
+cm_ds <- confusionMatrix(data = pred_train_ds, reference = y_ds)
+
+prob_validation_ds <- predict(xgb_model_downsample, validation_matrix, type="prob")
+pred_validation_ds <- predict(xgb_model_downsample, validation_matrix, type="raw")
+
+cm_validation_ds <- confusionMatrix(data = pred_validation_ds, reference = y_validation)
+xgb_roc_ds <- pROC::roc(y_validation, prob_validation_ds[,'Yes'])
+
+plot(xgb_roc_ds)
+auc(xgb_roc_ds)
+
+
+
+
 
 
 

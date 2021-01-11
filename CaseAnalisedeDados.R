@@ -1,10 +1,9 @@
 library(data.table)
 library(tidyverse)
-library(caret)
-library(broom)
-library(xgboost)
-library(pROC)
 library(magick)
+library(caret)
+library(pROC)
+library(xgboost)
 options(scipen = 999, digits = 3)
 
 ######################3 JUST TO SEE A THING

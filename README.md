@@ -1,29 +1,28 @@
 
-## R Markdown
+## Financial Inclusion in Africa
 
-This is an R Markdown document. Markdown is a simple formatting syntax
-for authoring HTML, PDF, and MS Word documents. For more details on
-using R Markdown see <http://rmarkdown.rstudio.com>.
+Esse repositório contém códigos do desafio Zindi Africa. Aqui, é
+descrito todo o processo para chegar no resultado final. Os códigos todo
+estão no arquivo `CaseAnaliseDados.R`.
 
-When you click the **Knit** button a document will be generated that
-includes both content as well as the output of any embedded R code
-chunks within the document. You can embed an R code chunk like this:
+O desafio foi feito na linguagem `R`. As etapas do processo são:
 
-``` r
-summary(cars)
-```
+  - Análise exploratória dos dados
+  - Balanceamento de variáveis
+  - Modelagem
+  - Resultados
 
-    ##      speed           dist       
-    ##  Min.   : 4.0   Min.   :  2.00  
-    ##  1st Qu.:12.0   1st Qu.: 26.00  
-    ##  Median :15.0   Median : 36.00  
-    ##  Mean   :15.4   Mean   : 42.98  
-    ##  3rd Qu.:19.0   3rd Qu.: 56.00  
-    ##  Max.   :25.0   Max.   :120.00
+## Importações
 
-## Including Plots
+Os pacotes `data.table`e `tidyverse` (que inclui `dplyr`, `tidyr` e
+outros) serão utilizados para as operações de *data wrangling*. Para as
+visualizações, utilizarei o `ggplot2` (incluído no `tidyverse`) e
+`magick`; enquanto que os pacotes `caret`, `pROC` e `xgboost` serão
+utilizados na parte de *machine learning*.
 
-You can also embed plots, for example:
+Os dados
+
+## Análise Exploratória dos Dados
 
 ![](README_files/figure-gfm/pressure-1.png)<!-- -->
 

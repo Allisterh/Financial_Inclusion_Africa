@@ -4,24 +4,60 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999, digits = 3)
 ```
 
-## R Markdown
+## Financial Inclusion in Africa
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Esse repositório contém códigos do desafio Zindi Africa. Aqui, é descrito todo o processo para chegar no resultado final. Os códigos todo estão no arquivo `CaseAnaliseDados.R`.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+O desafio foi feito na linguagem `R`. As etapas do processo são:
 
-```{r cars}
-summary(cars)
+- Análise exploratória dos dados
+- Balanceamento de variáveis
+- Modelagem
+- Resultados
+
+## Importações
+
+Os pacotes `data.table`e `tidyverse` (que inclui `dplyr`, `tidyr` e outros) serão utilizados para as operações de *data wrangling*. Para as visualizações, utilizarei o `ggplot2` (incluído no `tidyverse`) e `magick`; enquanto que os pacotes `caret`, `pROC` e `xgboost` serão utilizados na parte de *machine learning*.
+
+Os dados
+
+## Análise Exploratória dos Dados
+
+```{r cars, echo=FALSE, warning=F, message=F}
+library(data.table)
+library(tidyverse)
+library(magick)
+library(caret)
+library(pROC)
+library(xgboost)
+
+ag_colors <- c('#3e6dbe', '#78ca35', '#253165')
+
+vars <- fread('data/VariableDefinitions.csv', header = T, encoding = 'UTF-8')
+train <- fread('data/Train_v2.csv')
+test <- fread('data/Test_v2.csv')
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+
+logo <- image_read("https://logospng.org/download/agibank/logo-agibank-icon-2048.png")
+
+p1 <- ggplot(train, aes(x = bank_account, fill = bank_account)) +
+  geom_bar() +
+  scale_fill_manual(values = ag_colors) + 
+  labs(title = 'DESBALANÇO ENTRE AS VARIÁVEIS RESPOSTA',
+       subtitle = 'CONTAGEM POR CATEGORIA',
+       fill = 'CONTA NO BANCO') +
+  theme_minimal() +
+  theme(axis.title = element_blank())
+
+p1
+grid::grid.raster(logo, x = .98, y = 0.015, just = c('right', 'bottom'), width = unit(.3, 'inches'))
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

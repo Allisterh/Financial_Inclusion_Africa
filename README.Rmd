@@ -20,7 +20,7 @@ O desafio foi feito na linguagem `R` e as etapas do processo são:
 
 ## Importações
 
-Os pacotes `data.table`e `tidyverse` (que inclui `dplyr`, `tidyr` e outros) serão utilizados para as operações de *data wrangling*. Para as visualizações, utilizarei o `ggplot2` (incluído no `tidyverse`) e `magick`; enquanto que os pacotes `caret`, `pROC` e `xgboost` serão utilizados na parte de *machine learning*.
+Os pacotes `data.table` e `tidyverse` (que inclui `dplyr`, `tidyr` e outros) serão utilizados para as operações de *data wrangling*. Para as visualizações, utilizarei o `ggplot2` (incluído no `tidyverse`) e `magick`; enquanto que os pacotes `caret`, `pROC` e `xgboost` serão utilizados na parte de *machine learning*.
 
 Os dados
 

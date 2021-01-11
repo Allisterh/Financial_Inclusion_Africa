@@ -17,9 +17,14 @@ vars <- fread('data/VariableDefinitions.csv', header = T, encoding = 'UTF-8')
 train <- fread('data/Train_v2.csv')
 test <- fread('data/Test_v2.csv')
 
+cols <- train[, lapply(.SD, function(x) {is.character(x)})]
+cols <- setDT(as.data.frame(t(cols)), keep.rownames = T)
+cols <- cols[V1==T & rn != 'uniqueid']
+
+train[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
 
 ##### EDA
-######## GLIMPSE
+######## SUMMARY
 
 summary(train)
 
@@ -107,19 +112,25 @@ trcontrol = trainControl( method = "cv",
 
 ####### RANDOM FOREST
 
+mtry <- sqrt(ncol(train))
+tunegrid <- expand.grid(.mtry=mtry)
+
 rf_model <- train(x = train, 
                   y = y_train,
                   trControl = trcontrol,
-                  tuneLength = 5,
+                  tuneGrid = tunegrid,
+                  # tuneLength = 5,
                   method = "rf")
 
-prob_rf_test <- predict(rf_model, train, type='prob')
-pred_rf_test <- predict(rf_model, train, type='raw')
-cm_rf_test <- confusionMatrix(data = pred_rf_test, reference = y_train)
+prob_rf_train <- predict(rf_model, train, type='prob')
+pred_rf_train <- predict(rf_model, train, type='raw')
+pred_rf_train2 <- fifelse(prob_rf_train[,'Yes'] > 0.25, 'Yes', 'No') %>% as.factor()
+(cm_rf_train <- confusionMatrix(data = pred_rf_train2, reference = y_train))
 
 prob_rf_validation <- predict(rf_model, validation, type='prob')
 pred_rf_validation <- predict(rf_model, validation, type='raw')
-cm_rf_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
+pred_rf_validation2 <- fifelse(prob_rf_validation[,'Yes'] > 0.25, 'Yes', 'No') %>% as.factor()
+cm_rf_validation <- confusionMatrix(data = pred_rf_validation2, reference = y_validation)
 rf_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
 
 plot(rf_roc)
@@ -135,16 +146,18 @@ train_ds <- train_ds[, -'bank_account', with=F]
 rf_ds_model <- train(x = train_ds, 
                      y = y_ds,
                      trControl = trcontrol,
-                     tuneLength = 5,
+                     tuneLength = tunegrid,
                      method = "rf")
 
 prob_rf_ds_train <- predict(rf_ds_model, train_ds, type='prob')
 pred_rf_ds_train <- predict(rf_ds_model, train_ds, type='raw')
-cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train, reference = y_ds)
+pred_rf_ds_train2 <- fifelse(prob_rf_ds_train[,'Yes'] > 0.25, 'Yes', 'No') %>% as.factor()
+(cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train2, reference = y_ds))
 
 prob_rf_validation_ds <- predict(rf_ds_model, validation, type='prob')
 pred_rf_validation_ds <- predict(rf_ds_model, validation, type='raw')
-cm_rf_ds_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
+pred_rf_validation_ds2 <- fifelse(prob_rf_validation_ds[,'Yes'] > 0.5, 'Yes', 'No') %>% as.factor()
+(cm_rf_ds_validation <- confusionMatrix(data = pred_rf_validation_ds2, reference = y_validation))
 rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
 
 plot(rf_ds_roc)

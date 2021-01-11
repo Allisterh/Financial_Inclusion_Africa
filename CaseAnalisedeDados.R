@@ -10,6 +10,9 @@ options(scipen = 999, digits = 3)
 
 ag_colors <- c('#3e6dbe', '#78ca35', '#253165')
 
+##### REPRODUCIBILIDADE
+
+set.seed(123) 
 
 ##### IMPORTAÇÃO DE DADOS
 
@@ -41,6 +44,8 @@ train[, .N, bank_account][, perc := prop.table(N)][]
 top_uniques <- train[, .N, uniqueid][order(-N)][1:10]
 train[uniqueid %in% top_uniques$uniqueid][order(uniqueid)]
 train[, min(year), country]
+
+train <- train[, -'uniqueid', with=F]
 
 ######### CONTAGEM POR VARIÁVEL RESPOSTA
 
@@ -122,19 +127,25 @@ rf_model <- train(x = train,
                   # tuneLength = 5,
                   method = "rf")
 
+####### MATRIZ DE CONFUSÃO DO TREINO
+
 prob_rf_train <- predict(rf_model, train, type='prob')
 pred_rf_train <- predict(rf_model, train, type='raw')
-pred_rf_train2 <- fifelse(prob_rf_train[,'Yes'] > 0.25, 'Yes', 'No') %>% as.factor()
 (cm_rf_train <- confusionMatrix(data = pred_rf_train2, reference = y_train))
+
+####### MATRIZ DE CONFUSÃO DA VALIDAÇÃO
 
 prob_rf_validation <- predict(rf_model, validation, type='prob')
 pred_rf_validation <- predict(rf_model, validation, type='raw')
-pred_rf_validation2 <- fifelse(prob_rf_validation[,'Yes'] > 0.25, 'Yes', 'No') %>% as.factor()
-cm_rf_validation <- confusionMatrix(data = pred_rf_validation2, reference = y_validation)
+cm_rf_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
 rf_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+
+####### ROC E AUC
 
 plot(rf_roc)
 auc(rf_roc)
+
+####### DOWNSAMPLE
 
 train_ds <- downSample(train, y_train, yname = 'bank_account')
 
@@ -149,19 +160,25 @@ rf_ds_model <- train(x = train_ds,
                      tuneLength = tunegrid,
                      method = "rf")
 
+####### MATRIZ DE CONFUSÃO DO TREINO COM DATASET DOWNSAMPLE
+
 prob_rf_ds_train <- predict(rf_ds_model, train_ds, type='prob')
 pred_rf_ds_train <- predict(rf_ds_model, train_ds, type='raw')
-pred_rf_ds_train2 <- fifelse(prob_rf_ds_train[,'Yes'] > 0.25, 'Yes', 'No') %>% as.factor()
 (cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train2, reference = y_ds))
+
+####### MATRIZ DE CONFUSÃO DA VALIDAÇÃO COM MODELO TREINADO COM DATASET DOWNSAMPLE
 
 prob_rf_validation_ds <- predict(rf_ds_model, validation, type='prob')
 pred_rf_validation_ds <- predict(rf_ds_model, validation, type='raw')
-pred_rf_validation_ds2 <- fifelse(prob_rf_validation_ds[,'Yes'] > 0.5, 'Yes', 'No') %>% as.factor()
-(cm_rf_ds_validation <- confusionMatrix(data = pred_rf_validation_ds2, reference = y_validation))
+(cm_rf_ds_validation <- confusionMatrix(data = pred_rf_validation_ds, reference = y_validation))
 rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+
+####### ROC E AUC
 
 plot(rf_ds_roc)
 auc(rf_ds_roc)
+
+####### UPSAMPLE
 
 train_us <- upSample(train, y_train, yname = 'bank_account')
 
@@ -176,80 +193,38 @@ rf_us_model <- train(x = train_us,
                      tuneLength = 5,
                      method = "rf")
 
+####### MATRIZ DE CONFUSÃO DO TREINO COM DATASET UPSAMPLE
+
 prob_rf_ds_train <- predict(rf_us_model, train_us, type='prob')
 pred_rf_ds_train <- predict(rf_us_model, train_us, type='raw')
 cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train, reference = y_us)
+
+####### MATRIZ DE CONFUSÃO DA VALIDAÇÃO COM MODELO TREINADO COM DATASET UPSAMPLE
 
 prob_rf_validation <- predict(rf_us_model, validation, type='prob')
 pred_rf_validation <- predict(rf_us_model, validation, type='raw')
 cm_rf_us_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
 rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
 
+####### ROC E AUC
+
 plot(rf_ds_roc)
 auc(rf_ds_roc)
 
 
+####### TREINO COM VÁRIAS METOLOGIAS NO DATASET DE DOWNSAMPLE
 
-
-
-
-
-
-
-
-
-dmy_train <- dummyVars('~.', data = train)
-train_matrix <- data.table(predict(dmy_train, newdata = train))
-
-dmy_validation <- dummyVars('~.', data = validation)
-validation_matrix <- data.table(predict(dmy_validation, newdata = validation))
-
-
-################### MODELO
-
-set.seed(100)  # For reproducibility
-
-train_matrix <- train_matrix %>% as.matrix() %>% xgb.DMatrix()
-validation_matrix <- validation_matrix %>% as.matrix() %>% xgb.DMatrix()
-
-
-
-xgbGrid <- expand.grid(nrounds = c(35,50),  # this is n_estimators in the python code above
-                       max_depth = c(10, 25),
-                       colsample_bytree = seq(0.5, 0.9, length.out = 2),
-                       ## The values below are default values in the sklearn-api. 
-                       eta = 0.1,
-                       gamma=0,
-                       min_child_weight = 1,
-                       subsample = 1)
-
-xgb_model <- train( x = train_matrix, 
-                    y = y_train,
-                    trControl = xgb_trcontrol,
-                    tuneGrid = xgbGrid,
-                    # tuneLength = 5,
-                    method = "xgbTree")
-
-prob_train <- predict(xgb_model, train_matrix, type="prob")
-pred_train <- predict(xgb_model, train_matrix, type="raw")
-
-cm <- confusionMatrix(data = pred_train, reference = y_train)
-
-prob_validation <- predict(xgb_model, validation_matrix, type="prob")
-pred_validation <- predict(xgb_model, validation_matrix, type="raw")
-
-cm_validation <- confusionMatrix(data = pred_validation, reference = y_validation)
-xgb_roc <- pROC::roc(y_validation, prob_validation[,'Yes'])
-
-plot(xgb_roc)
-auc(xgb_roc)
-
-
+####### XGBOOST
+####### DATASET DE TREINO COM DOWNSAMPLE EM MATRIX PARA XGBOOST
 
 dmy_train_ds <- dummyVars('~.', data = train_downsample)
 train_matrix_ds <- data.table(predict(dmy_train_ds, newdata = train_downsample))
-
 train_matrix_ds <- train_matrix_ds %>% as.matrix() %>% xgb.DMatrix()
+
+####### DATASET DE VALIDAÇÃO EM MATRIX PARA XGBOOST
+
+dmy_validation <- dummyVars('~.', data = validation)
+validation_matrix <- data.table(predict(dmy_validation, newdata = validation))
 
 xgb_model_downsample <- train( x = train_matrix_ds, 
                                y = y_ds,
@@ -260,16 +235,19 @@ xgb_model_downsample <- train( x = train_matrix_ds,
 prob_train_ds <- predict(xgb_model_downsample, train_matrix_ds, type="prob")
 pred_train_ds <- predict(xgb_model_downsample, train_matrix_ds, type="raw")
 
-cm_ds <- confusionMatrix(data = pred_train_ds, reference = y_ds)
+(cm_ds <- confusionMatrix(data = pred_train_ds, reference = y_ds))
 
 prob_validation_ds <- predict(xgb_model_downsample, validation_matrix, type="prob")
 pred_validation_ds <- predict(xgb_model_downsample, validation_matrix, type="raw")
 
-cm_validation_ds <- confusionMatrix(data = pred_validation_ds, reference = y_validation)
+(cm_validation_ds <- confusionMatrix(data = pred_validation_ds, reference = y_validation))
 xgb_roc_ds <- pROC::roc(y_validation, prob_validation_ds[,'Yes'])
 
 plot(xgb_roc_ds)
 auc(xgb_roc_ds)
+
+
+
 
 
 

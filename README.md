@@ -44,31 +44,78 @@ names(train)
 A descrição das variáveis está contida no arquivo
 `VariableDefinitions.csv`, que são as seguintes:
 
-  - *country*: País do entrevistado
-  - *year*: Ano da entrevista
-  - *uniqueid*: Identificação única do entrevistado
-  - *location\_type*: Tipo da localização, se urbano ou rural
-  - *cellphone\_access*: Se o entrevistado tem acesso a celular
-  - *household\_size*: Número de pessoas vivendo no domicílio do
+  - **country**: País do entrevistado
+  - **year**: Ano da entrevista
+  - **uniqueid**: Identificação única do entrevistado
+  - **location\_type**: Tipo da localização, se urbano ou rural
+  - **cellphone\_access**: Se o entrevistado tem acesso a celular
+  - **household\_size**: Número de pessoas vivendo no domicílio do
     entrevistado
-  - *age\_of\_respondent*: Idade do entrevistado
-  - *gender\_of\_respondent*: Sexo do entrevistado
-  - *relationship\_with\_head*: Relação do entrevistado com o (a) chefe
-    de família
-  - *marital\_status*: Estado civil do entrevistado
-  - *education\_level*: Nível de educação do entrevistado
-  - *job\_type*: Tipo do emprego do entrevistado
+  - **age\_of\_respondent**: Idade do entrevistado
+  - **gender\_of\_respondent**: Sexo do entrevistado
+  - **relationship\_with\_head**: Relação do entrevistado com o (a)
+    chefe de família
+  - **marital\_status**: Estado civil do entrevistado
+  - **education\_level**: Nível de educação do entrevistado
+  - **job\_type**: Tipo do emprego do entrevistado
 
-Começaremos com uma exploração básica de algumas variávies do dataset. A
-começar pela variável resposta, `bank_account`.
+Uma boa maneira de termos um *overview* do dataset e suas variáveis é
+simplesmente utilizarmos a função `summary`, que vai nos dar algumas
+estatísticas básicas. Antes, iremos transformar algumas variáveis de
+`character` para `factor`. Isso fará sentido para a modelagem, e também
+para o summary, que irá nos dar algumas estatísticas a mais do que se
+fosse ainda um `character`.
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+``` r
+cols <- train[, lapply(.SD, function(x) {is.character(x)})]
+cols <- setDT(as.data.frame(t(cols)), keep.rownames = T)
+cols <- cols[V1==T & rn != 'uniqueid']
+
+train[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
+
+summary(train)
+```
+
+    ##      country          year        uniqueid         bank_account location_type
+    ##  Kenya   :6068   Min.   :2016   Length:23524       No :20212    Rural:14343  
+    ##  Rwanda  :8735   1st Qu.:2016   Class :character   Yes: 3312    Urban: 9181  
+    ##  Tanzania:6620   Median :2017   Mode  :character                             
+    ##  Uganda  :2101   Mean   :2017                                                
+    ##                  3rd Qu.:2018                                                
+    ##                  Max.   :2018                                                
+    ##                                                                              
+    ##  cellphone_access household_size age_of_respondent gender_of_respondent
+    ##  No : 6070        Min.   : 1.0   Min.   : 16.0     Female:13877        
+    ##  Yes:17454        1st Qu.: 2.0   1st Qu.: 26.0     Male  : 9647        
+    ##                   Median : 3.0   Median : 35.0                         
+    ##                   Mean   : 3.8   Mean   : 38.8                         
+    ##                   3rd Qu.: 5.0   3rd Qu.: 49.0                         
+    ##                   Max.   :21.0   Max.   :100.0                         
+    ##                                                                        
+    ##          relationship_with_head                 marital_status 
+    ##  Child              : 2229      Divorced/Seperated     : 2076  
+    ##  Head of Household  :12831      Dont know              :    8  
+    ##  Other non-relatives:  190      Married/Living together:10749  
+    ##  Other relative     :  668      Single/Never Married   : 7983  
+    ##  Parent             : 1086      Widowed                : 2708  
+    ##  Spouse             : 6520                                     
+    ##                                                                
+    ##                         education_level                       job_type   
+    ##  No formal education            : 4515   Self employed            :6437  
+    ##  Other/Dont know/RTA            :   35   Informally employed      :5597  
+    ##  Primary education              :12791   Farming and Fishing      :5441  
+    ##  Secondary education            : 4223   Remittance Dependent     :2527  
+    ##  Tertiary education             : 1157   Other Income             :1080  
+    ##  Vocational/Specialised training:  803   Formally employed Private:1055  
+    ##                                          (Other)                  :1387
+
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 Há um desbalanço na variável resposta. Isso deve ser levado em
 consideração na hora de treinar o modelo, pois datasets desbalanceados
 podem influenciar no resultado do modelo.
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 Os países apresentam taxas diferentes de pessoas com contas bancárias.
 

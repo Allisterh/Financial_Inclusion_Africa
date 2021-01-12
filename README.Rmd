@@ -54,20 +54,32 @@ names(train)
 
 A descrição das variáveis está contida no arquivo `VariableDefinitions.csv`, que são as seguintes:
 
-* *country*: País do entrevistado
-* *year*: Ano da entrevista
-* *uniqueid*: Identificação única do entrevistado
-* *location_type*: Tipo da localização, se urbano ou rural
-* *cellphone_access*: Se o entrevistado tem acesso a celular
-* *household_size*: Número de pessoas vivendo no domicílio do entrevistado
-* *age_of_respondent*: Idade do entrevistado
-* *gender_of_respondent*: Sexo do entrevistado
-* *relationship_with_head*: Relação do entrevistado com o (a) chefe de família
-* *marital_status*: Estado civil do entrevistado
-* *education_level*: Nível de educação do entrevistado
-* *job_type*: Tipo do emprego do entrevistado
+* **country**: País do entrevistado
+* **year**: Ano da entrevista
+* **uniqueid**: Identificação única do entrevistado
+* **location_type**: Tipo da localização, se urbano ou rural
+* **cellphone_access**: Se o entrevistado tem acesso a celular
+* **household_size**: Número de pessoas vivendo no domicílio do entrevistado
+* **age_of_respondent**: Idade do entrevistado
+* **gender_of_respondent**: Sexo do entrevistado
+* **relationship_with_head**: Relação do entrevistado com o (a) chefe de família
+* **marital_status**: Estado civil do entrevistado
+* **education_level**: Nível de educação do entrevistado
+* **job_type**: Tipo do emprego do entrevistado
 
-Começaremos com uma exploração básica de algumas variávies do dataset. A começar pela variável resposta, `bank_account`.
+Uma boa maneira de termos um *overview* do dataset e suas variáveis é simplesmente utilizarmos a função `summary`, que vai nos dar algumas estatísticas básicas. Antes, iremos transformar algumas variáveis de `character` para `factor`. Isso fará sentido para a modelagem, e também para o summary, que irá nos dar algumas estatísticas a mais do que se fosse ainda um `character`.
+
+``` {r}
+
+cols <- train[, lapply(.SD, function(x) {is.character(x)})]
+cols <- setDT(as.data.frame(t(cols)), keep.rownames = T)
+cols <- cols[V1==T & rn != 'uniqueid']
+
+train[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
+
+summary(train)
+
+```
 
 ```{r, echo=FALSE}
 
@@ -83,11 +95,12 @@ p1 <- ggplot(perc_bank, aes(x = bank_account, y = n, fill = bank_account)) +
     vjust = -0.5, size = 4
   ) + 
   scale_fill_manual(values = ag_colors) + 
-  labs(title = 'DESBALANÇO NA VARIÁVEL RESPOSTA',
-       subtitle = 'CONTAGEM DO NÚMERO DE PESSOAS COM E SEM CONTA NO BANCO',
-       fill = 'CONTA NO BANCO') +
+  labs(title = 'Desbalanço no variável resposta',
+       subtitle = 'Contagem no número de pesoas com e sem conta no banco',
+       fill = 'Conta no Banco') +
   theme_minimal() +
-  theme(axis.title = element_blank())
+  theme(axis.title = element_blank(), 
+        plot.title = element_text(size = 16))
 
 p1
 grid::grid.raster(logo, x = .98, y = 0.015, just = c('right', 'bottom'), width = unit(.3, 'inches'))

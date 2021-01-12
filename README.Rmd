@@ -157,14 +157,14 @@ Depois de rodarmos o modelo, iremos avaliar a sua performance. Para isso, iremos
 
 ``` {r echo = F}
 
-cm_rf_train <- readRDS('cm_rf_train.rds')
-cm_rf_validation <- readRDS('cm_rf_validation.rds')
-cm_rf_ds_train <- readRDS('cm_rf_ds_train.rds')
-cm_rf_ds_validation <- readRDS('cm_rf_ds_validation.rds')
-cm_glm_validation <- readRDS('cm_glm_validation.rds')
-cm_glm_train <- readRDS('cm_glm_train.rds')
-cm_xgb_train <- readRDS('cm_xgb_train.rds')
-cm_validation_xgb <- readRDS('cm_validation_xgb.rds')
+cm_rf_train <-          readRDS('data/outputs/cm_rf_train.rds')
+cm_rf_validation <-     readRDS('data/outputs/cm_rf_validation.rds')
+cm_rf_ds_train <-       readRDS('data/outputs/cm_rf_ds_train.rds')
+cm_rf_ds_validation <-  readRDS('data/outputs/cm_rf_ds_validation.rds')
+cm_glm_validation <-    readRDS('data/outputs/cm_glm_validation.rds')
+cm_glm_train <-         readRDS('data/outputs/cm_glm_train.rds')
+cm_xgb_train <-         readRDS('data/outputs/cm_xgb_train.rds')
+cm_validation_xgb <-    readRDS('data/outputs/cm_validation_xgb.rds')
 
 ```
 

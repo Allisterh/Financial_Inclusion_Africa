@@ -1,5 +1,5 @@
 
-## Introduçao
+## Introdução
 
 Esse repositório contém códigos do desafio Zindi Africa. Aqui, é
 descrito todo o processo para chegar no resultado final. Os códigos

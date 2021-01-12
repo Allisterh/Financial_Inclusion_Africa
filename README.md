@@ -41,6 +41,27 @@ names(train)
     ## [10] "relationship_with_head" "marital_status"         "education_level"       
     ## [13] "job_type"
 
+A descrição das variáveis está contida no arquivo
+`VariableDefinitions.csv`, que são as seguintes:
+
+  - *country*: País do entrevistado
+  - *year*: Ano da entrevista
+  - *uniqueid*: Identificação única do entrevistado
+  - *location\_type*: Tipo da localização, se urbano ou rural
+  - *cellphone\_access*: Se o entrevistado tem acesso a celular
+  - *household\_size*: Número de pessoas vivendo no domicílio do
+    entrevistado
+  - *age\_of\_respondent*: Idade do entrevistado
+  - *gender\_of\_respondent*: Sexo do entrevistado
+  - *relationship\_with\_head*: Relação do entrevistado com o (a) chefe
+    de família
+  - *marital\_status*: Estado civil do entrevistado
+  - *education\_level*: Nível de educação do entrevistado
+  - *job\_type*: Tipo do emprego do entrevistado
+
+Começaremos com uma exploração básica de algumas variávies do dataset. A
+começar pela variável resposta, `bank_account`.
+
 ![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 Há um desbalanço na variável resposta. Isso deve ser levado em

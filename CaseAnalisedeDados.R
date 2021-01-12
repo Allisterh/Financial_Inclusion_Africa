@@ -98,15 +98,8 @@ train <- train[trainIndex]
 y_train <- as.factor(train$bank_account)
 y_validation <- as.factor(validation$bank_account)
 
-train <- train[, c(1, 5:length(names(train))), with=F]
-validation <- validation[, c(1, 5:length(names(validation))), with=F]
-
-cols <- train[, lapply(.SD, function(x) {is.character(x)})]
-cols <- setDT(as.data.frame(t(cols)), keep.rownames = T)
-cols <- cols[V1==T]
-
-train[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
-validation[, (cols$rn) := lapply(.SD, as.factor), .SDcols = cols$rn]
+train <- train[, -'year', with=F]
+validation <- validation[, -'year', with=F]
 
 ####### TRAIN CONTROL
 
@@ -117,31 +110,30 @@ trcontrol = trainControl( method = "cv",
 
 ####### RANDOM FOREST
 
-mtry <- sqrt(ncol(train))
+mtry <- sqrt(ncol(train[, -'bank_account', with=F]))
 tunegrid <- expand.grid(.mtry=mtry)
 
-rf_model <- train(x = train, 
+rf_model <- train(x = train[, -'bank_account', with=F], 
                   y = y_train,
                   trControl = trcontrol,
                   tuneGrid = tunegrid,
-                  # tuneLength = 5,
                   method = "rf")
 
 ####### MATRIZ DE CONFUSÃO DO TREINO
 
-prob_rf_train <- predict(rf_model, train, type='prob')
-pred_rf_train <- predict(rf_model, train, type='raw')
-(cm_rf_train <- confusionMatrix(data = pred_rf_train2, reference = y_train))
+prob_rf_train <- predict(rf_model, train[, -'bank_account', with=F], type='prob')
+pred_rf_train <- predict(rf_model, train[, -'bank_account', with=F], type='raw')
+(cm_rf_train <- confusionMatrix(data = pred_rf_train, reference = y_train))
 
 ####### MATRIZ DE CONFUSÃO DA VALIDAÇÃO
 
-prob_rf_validation <- predict(rf_model, validation, type='prob')
-pred_rf_validation <- predict(rf_model, validation, type='raw')
-cm_rf_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
-rf_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+prob_rf_validation <- predict(rf_model, validation[, -'bank_account', with=F], type='prob')
+pred_rf_validation <- predict(rf_model, validation[, -'bank_account', with=F], type='raw')
+(cm_rf_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation))
 
 ####### ROC E AUC
 
+rf_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
 plot(rf_roc)
 auc(rf_roc)
 
@@ -164,17 +156,17 @@ rf_ds_model <- train(x = train_ds,
 
 prob_rf_ds_train <- predict(rf_ds_model, train_ds, type='prob')
 pred_rf_ds_train <- predict(rf_ds_model, train_ds, type='raw')
-(cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train2, reference = y_ds))
+(cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train, reference = y_ds))
 
 ####### MATRIZ DE CONFUSÃO DA VALIDAÇÃO COM MODELO TREINADO COM DATASET DOWNSAMPLE
 
 prob_rf_validation_ds <- predict(rf_ds_model, validation, type='prob')
 pred_rf_validation_ds <- predict(rf_ds_model, validation, type='raw')
 (cm_rf_ds_validation <- confusionMatrix(data = pred_rf_validation_ds, reference = y_validation))
-rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
 
 ####### ROC E AUC
 
+rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation_ds[,'Yes'])
 plot(rf_ds_roc)
 auc(rf_ds_roc)
 
@@ -195,19 +187,19 @@ rf_us_model <- train(x = train_us,
 
 ####### MATRIZ DE CONFUSÃO DO TREINO COM DATASET UPSAMPLE
 
-prob_rf_ds_train <- predict(rf_us_model, train_us, type='prob')
-pred_rf_ds_train <- predict(rf_us_model, train_us, type='raw')
-cm_rf_ds_train <- confusionMatrix(data = pred_rf_ds_train, reference = y_us)
+prob_rf_us_train <- predict(rf_us_model, train_us, type='prob')
+pred_rf_us_train <- predict(rf_us_model, train_us, type='raw')
+cm_rf_us_train <- confusionMatrix(data = pred_rf_us_train, reference = y_us)
 
 ####### MATRIZ DE CONFUSÃO DA VALIDAÇÃO COM MODELO TREINADO COM DATASET UPSAMPLE
 
-prob_rf_validation <- predict(rf_us_model, validation, type='prob')
-pred_rf_validation <- predict(rf_us_model, validation, type='raw')
-cm_rf_us_validation <- confusionMatrix(data = pred_rf_validation, reference = y_validation)
-rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
+prob_rf_validation_us <- predict(rf_us_model, validation, type='prob')
+pred_rf_validation_us <- predict(rf_us_model, validation, type='raw')
+cm_rf_us_validation <- confusionMatrix(data = pred_rf_validation_us, reference = y_validation)
 
 ####### ROC E AUC
 
+rf_ds_roc <- pROC::roc(y_validation, prob_rf_validation[,'Yes'])
 plot(rf_ds_roc)
 auc(rf_ds_roc)
 

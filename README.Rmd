@@ -41,6 +41,8 @@ ag_colors <- c('#3e6dbe', '#78ca35', '#253165')
 vars <- fread('data/VariableDefinitions.csv', header = T, encoding = 'UTF-8')
 train <- fread('data/Train_v2.csv')
 test <- fread('data/Test_v2.csv')
+
+set.seed(123)
 ```
 
 
@@ -113,13 +115,20 @@ O primeiro passo a ser feito é rodar um modelo de *machine learning* e vermos o
 
 O pacote `caret` tem uma função que facilita o processo de dividir o dataset de maneira distribuida como o dataset original. 75% do dataset original permaneceu no dataset de treino, e 25% ficou separado no de validação.
 
-``` {r eval = F}
+``` {r}
 
 trainIndex <- createDataPartition(train$bank_account, p = .75, 
                                   list = FALSE, times = 1)
 
 validation <- train[-trainIndex]
 train <- train[trainIndex]
+
+y_train <- as.factor(train$bank_account)
+y_validation <- as.factor(validation$bank_account)
+
+train <- train[, -'year', with=F]
+validation <- validation[, -'year', with=F]
+
 
 ```
 
@@ -143,3 +152,169 @@ rf_model <- train(x = train[, -'bank_account', with=F],
                   method = "rf")
 
 ```
+
+Depois de rodarmos o modelo, iremos avaliar a sua performance. Para isso, iremos comparar a acurácia das previsões tanto no treino de teste, quando no de validação, que separamos apenas para isso. Se a performance no treino de validação não for muito inferior a de teste, quer dizer que nosso modelo pode performar bem em dados futuros, não apresentando *overfit*.
+
+``` {r echo = F}
+
+cm_rf_train <- readRDS('cm_rf_train.rds')
+cm_rf_validation <- readRDS('cm_rf_validation.rds')
+cm_rf_ds_train <- readRDS('cm_rf_ds_train.rds')
+cm_rf_ds_validation <- readRDS('cm_rf_ds_validation.rds')
+cm_glm_validation <- readRDS('cm_glm_validation.rds')
+cm_glm_train <- readRDS('cm_glm_train.rds')
+cm_xgb_train <- readRDS('cm_xgb_train.rds')
+cm_validation_xgb <- readRDS('cm_validation_xgb.rds')
+
+```
+
+### Matriz de Confusão do treino
+
+``` {r echo = F}
+
+cm_rf_train
+
+```
+
+### Matriz de Confusão da validação
+
+``` {r echo = F}
+
+cm_rf_validation
+
+```
+
+No dataset de treino, obtivemos uma acurácia de 0.933, e no de validação 0.883. Se fosse só por essa informação, poderíamos dizer que nosso modelo está performando bem. Porém, pelos valores de especificidade, vemos que o fato de o dataset estar desbalanceado pode estar impactando o resultado de nossas previsões. 
+
+## Downsamplig
+
+Dessa maneira, utilizaremos o método de *Downsampling* para obter um dataset que tenha 50% de usuários com conta em banco e 50% de usuários sem conta em banco. Datasets assim tendem a nos dar modelos que capturem melhor as nuances de ambos os valores. Para isso, mais uma vez utilizamos o pacote `caret`.
+
+Apenas uma linha de comando e temos nosso novo dataset, agora balanceado.
+
+``` {r}
+
+train_ds <- downSample(train, y_train, yname = 'bank_account')
+setDT(train_ds)[, .N, bank_account]
+
+```
+
+Rodamos novamente o modelo de *Random Forest*, dessa vez no dataset balanceado o analisamos seus resultados.
+
+``` {r eval = F}
+
+y_ds <- train_ds$bank_account
+train_ds <- train_ds[, -'bank_account', with=F]
+
+rf_ds_model <- train(x = train_ds, 
+                     y = y_ds,
+                     trControl = trcontrol,
+                     tuneLength = tunegrid,
+                     method = "rf")
+
+```
+
+### Matriz de Confusão do treino balanceado
+
+``` {r echo = F}
+
+cm_rf_ds_train
+
+```
+
+### Matriz de Confusão do modelo com downsampling aplicado na validação
+
+``` {r echo = F}
+
+cm_rf_ds_validation
+
+```
+
+
+Ainda que tenhamos perdido um pouco de acurácia em relação ao modelo original, o novo modelo, feito a partir do dataset balanceado com a tecnica de *downsampling*, nos dá resultados mais equilibrados, que podemos ver pela Sensibilidade e Especificidade.
+
+Nota: É possível utilizar também o *upsampling*, que balanceia o dataset com mais observações, copiando observações da variável com menos entradas. Aqui, utilizei apenas o *downsampling*, mas no script de código completo, faço a avaliação dos dois métodos.
+
+## Modelagem
+
+Agora, iremos testar outras metodologias, como o simples *GLM* e o *XGBoost*.
+
+### GLM
+
+```{r eval = F}
+
+glm_model <- train( x = train_ds, 
+                    y = y_ds,
+                    trControl = trcontrol,
+                    tuneLength = 5,
+                    method = "glm")
+
+```
+
+### Matriz de Confusão do GLM no treino balanceado
+
+```{r echo = F}
+
+cm_glm_train
+
+```
+
+### Matriz de Confusão do GLM na validação
+
+```{r echo = F}
+
+cm_glm_validation
+
+```
+
+### xGBoost
+
+Para rodarmos o modelo de *xGBoost*, precisamos de algumas transformações antes. O algoritmo do modelo necessita que cada variável categórica esteja como numérica, como se fossem *dummies*. Assim, usamos o processo chamado *One Hot Encoding*. O pacote `caret` nos ajuda mais uma vez.
+
+``` {r eval = F}
+
+dmy_train_ds <- dummyVars('~.', data = train_ds)
+train_matrix_ds <- data.table(predict(dmy_train_ds, newdata = train_ds))
+train_matrix_ds <- train_matrix_ds %>% as.matrix() %>% xgb.DMatrix()
+
+
+dmy_validation <- dummyVars('~.', data = validation[, -'bank_account', with = F])
+validation_matrix <- data.table(predict(dmy_validation, newdata = validation[, -'bank_account', with = F]))
+validation_matrix <- validation_matrix %>% as.matrix() %>% xgb.DMatrix()
+
+```
+
+```{r eval = F}
+
+xgb_model <- train( x = train_matrix_ds, 
+                    y = y_ds,
+                    trControl = trcontrol,
+                    tuneLength = 4,
+                    method = "xgbTree")
+
+```
+
+### Matriz de Confusão do xGBoost no treino balanceado
+
+```{r echo = F}
+
+cm_xgb_train
+
+```
+
+### Matriz de Confusão do xGBoost no treino balanceado
+
+```{r echo = F}
+
+cm_validation_xgb
+
+```
+
+## Conclusão
+
+Os resultados dos 3 modelos foram bem parecidos, dessa maneira, entendo que temos mais vantagens ao escolhermos o mais simples, no caso o **GLM**. Isso porque ele nos dá parâmetros, dessa maneira podemos avaliar o impacto de cada variável na previsão. Datasets desbalanceados são bastante frequentes em casos de detecção de fraude ou detecção de câncer, por exemplo. O método de *downsampling*, utilizado aqui, pode ajudar a corrigir algum viés que esse desbalanço pode produzir nos modelos.
+
+O arquivo `SubmissionFile.csv` está preenchido com as previsões do teste, no padrão proposto no arquivo original.
+
+
+
